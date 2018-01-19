@@ -1,0 +1,12 @@
+{
+  "name": "country-util",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": "https://github.com/hellais/country-util",
+  "license": "BSD-2-Clause",
+  "devDependencies": {
+    "axios": "^0.17.1",
+    "babel-cli": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1"
+  }
+}
