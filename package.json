@@ -4,9 +4,10 @@
   "main": "index.js",
   "repository": "https://github.com/hellais/country-util",
   "license": "BSD-2-Clause",
-  "devDependencies": {
-    "axios": "^0.17.1",
-    "babel-cli": "^6.26.0",
-    "babel-preset-es2015": "^6.24.1"
-  }
+  "files": [
+    "data/country-list.json",
+    "data/regions.json",
+    "data/territory-names.json",
+    "index.js"
+  ]
 }
