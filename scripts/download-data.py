@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+import csv
 from lxml import html
 from glob import glob
 
@@ -88,37 +89,80 @@ def process_geonames_country_info():
             ]
     return obj
 
-def join_all(iso3166_list, territories, geonames_country_info):
+def process_unsd():
+    src_path = os.path.join(ROOT, 'data', 'unsd-m49-countries.csv')
+    obj = {}
+    with open(src_path) as in_file:
+        csv_reader = csv.reader(in_file)
+        next(csv_reader)
+        for row in csv_reader:
+            alpha3 = row[10]
+            if alpha3 in obj:
+                raise Exception('Detected a dupe')
+            # region_code, sub_region_code
+            obj[alpha3] = [
+                row[2],
+                row[4]
+            ]
+    # We add Taiwan to Eastern Asia, Asia
+    obj['TWN'] = ['142', '156']
+    return obj
+
+def join_base_jsons(territories, iso3166_list, unsd, geonames_country_info):
     items = []
     for iso_name, alpha2, alpha3, num in iso3166_list:
         name = territories[alpha2]
         capital, continent, tld, languages = geonames_country_info[alpha2]
+        region_code, sub_region_code = unsd[alpha3]
         entry = {
             'iso3166_alpha2': alpha2,
-            'iso3166_alpha3': alpha2,
+            'iso3166_alpha3': alpha3,
             'iso3166_num': num,
             'iso3166_name': iso_name,
             'name': name,
             'languages': languages.split(','),
             'tld': tld,
             'capital': capital,
-            'continent': continent
+            'region_code': region_code,
+            'sub_region_code': sub_region_code,
         }
         items.append(entry)
     sorted(items, key=lambda x: x['name'])
     return items
 
-def process_all():
+def make_regions(country_list, territories):
+    keyed_regions = {}
+    for c in country_list:
+        code = c['region_code']
+        if code not in keyed_regions:
+            if c['iso3166_alpha2'] == 'AQ':
+                region_name = 'Antarctica'
+                code = 'AQ'
+            else:
+                region_name = territories[code]
+            keyed_regions[code] = {
+                'name': territories[code],
+                'countries': []
+            }
+        keyed_regions[code]['countries'].append(c['iso3166_alpha2'])
+    return keyed_regions
+
+def generate_base_jsons():
     territories = process_territories()
-    country_list = join_all(process_iso3166(),
-                            territories,
-                            process_geonames_country_info())
+    country_list = join_base_jsons(territories,
+                                   process_iso3166(),
+                                   process_unsd(),
+                                   process_geonames_country_info())
+    regions = make_regions(country_list, territories)
     print('+ Writing territory-names.json')
     with open(os.path.join(ROOT, 'data', 'territory-names.json'), 'w') as out_file:
         json.dump(territories, out_file)
     print('+ Writing country-list.json')
     with open(os.path.join(ROOT, 'data', 'country-list.json'), 'w') as out_file:
         json.dump(country_list, out_file)
+    print('+ Writing regions.json')
+    with open(os.path.join(ROOT, 'data', 'regions.json'), 'w') as out_file:
+        json.dump(regions, out_file)
 
 def clean():
     for path in glob(os.path.join(ROOT, 'data', '*.tmp')):
@@ -128,7 +172,7 @@ def main():
     #clean()
     for resource in resources:
         download_resource(resource)
-    process_all()
+    generate_base_jsons()
 
 if __name__ == '__main__':
     main()
