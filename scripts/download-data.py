@@ -52,7 +52,12 @@ def process_iso3166():
     for el in tree.xpath('//table'):
         if el.xpath('./tr/th/text()')[0] == 'English short name (upper/lower case)':
             for tr in el.xpath('./tr'):
-                items.append([td.text_content() for td in tr.xpath('./td')])
+                try:
+                    iso_name = tr.xpath('./td//a/text()')[0]
+                except IndexError:
+                    continue
+                alpha2, alpha3, num = [td.text_content() for td in tr.xpath('./td')][1:4]
+                items.append([iso_name, alpha2, alpha3, num])
 
     def filter_empty(x):
         return len(x) != 0
