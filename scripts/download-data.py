@@ -117,6 +117,10 @@ def join_base_jsons(territories, iso3166_list, unsd, geonames_country_info):
     items = []
     for iso_name, alpha2, alpha3, num in iso3166_list:
         name = territories[alpha2]
+        alt_short = territories.get('%s-alt-short' % alpha2)
+        # Prefer the alt-short name if it's longer than 2 characters
+        if alt_short and len(alt_short) > 2:
+            name = alt_short
         capital, continent, tld, languages = geonames_country_info[alpha2]
         region_code, sub_region_code = unsd[alpha3]
         entry = {
