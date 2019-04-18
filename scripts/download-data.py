@@ -14,8 +14,8 @@ resources = [
         'dst': 'cldr-localenames-territories.json'
     },
     {
-        'url': 'https://en.wikipedia.org/wiki/ISO_3166-1',
-        'dst': 'wikipedia-iso-3166.html'
+        'url': 'https://datahub.io/core/country-codes/r/country-codes.csv',
+        'dst': 'datahub-country-codes.csv'
     },
     {
         'url': 'http://download.geonames.org/export/dump/countryInfo.txt',
@@ -45,26 +45,22 @@ def process_iso3166():
     """
     src_path = os.path.join(ROOT, 'data', resources[1]['dst'] + '.tmp')
 
-    with open(src_path) as in_file:
-        tree = html.fromstring(in_file.read())
-
     items = []
-    for el in tree.xpath('//table'):
-        if el.xpath('./tr/th/text()')[0] == 'English short name (upper/lower case)':
-            for tr in el.xpath('./tr'):
-                try:
-                    iso_name = tr.xpath('./td//a/text()')[0]
-                except IndexError:
-                    continue
-                alpha2, alpha3, num = [td.text_content() for td in tr.xpath('./td')][1:4]
-                items.append([iso_name, alpha2, alpha3, num])
+    with open(src_path) as in_file:
+        csv_reader = csv.reader(in_file)
+        next(csv_reader)
+        for row in csv_reader:
+            alpha2 = row[6]
+            alpha3 = row[7]
+            num = row[8]
+            iso_name = row[27]
+            if len(alpha2) != 2:
+                print("Skipping {}".format(row))
+                continue
+            assert len(alpha2) == 2, row
+            assert len(alpha3) == 3, row
+            items.append([iso_name, alpha2, alpha3, num])
 
-    def filter_empty(x):
-        return len(x) != 0
-    def map_fields(x):
-        return x[:4]
-
-    items = list(map(map_fields, filter(filter_empty, items)))
     if len(items) != ISO3166_COUNT:
         print('{} != {}'.format(len(items), ISO3166_COUNT))
         raise Exception('Inconsistency in country count')
