@@ -71,7 +71,18 @@ def process_territories():
     src_path = os.path.join(ROOT, 'data', resources[0]['dst'] + '.tmp')
     with open(src_path) as in_file:
         obj = json.load(in_file)
-    return obj['main']['en']['localeDisplayNames']['territories']
+    processed_territories = {}
+    territories = obj['main']['en']['localeDisplayNames']['territories']
+    for k, v in territories.items():
+        if '-alt-' in k:
+            continue
+        name = v
+        alt_short = territories.get(f'{k}-alt-short')
+        # Prefer the alt-short name if it's longer than 2 characters
+        if alt_short and len(alt_short) > 2:
+            name = alt_short
+        processed_territories[k] = name
+    return processed_territories
 
 def process_geonames_country_info():
     src_path = os.path.join(ROOT, 'data', resources[2]['dst'] + '.tmp')
@@ -113,10 +124,6 @@ def join_base_jsons(territories, iso3166_list, unsd, geonames_country_info):
     items = []
     for iso_name, alpha2, alpha3, num in iso3166_list:
         name = territories[alpha2]
-        alt_short = territories.get('%s-alt-short' % alpha2)
-        # Prefer the alt-short name if it's longer than 2 characters
-        if alt_short and len(alt_short) > 2:
-            name = alt_short
         capital, continent, tld, languages = geonames_country_info[alpha2]
         region_code, sub_region_code = unsd[alpha3]
         entry = {
